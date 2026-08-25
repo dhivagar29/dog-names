@@ -1,27 +1,31 @@
 # Dog Names
 
-A platform to help people discover and pick the perfect name for their dog.
+A site for finding a name that actually fits the dog.
 
-## Idea
+This first cut is a searchable catalog. No accounts, no database. You can browse, filter, and see meanings.
 
-Naming a dog is personal and surprisingly hard. This project aims to make discovery fun and useful — browse by vibe, breed, length, origin, or personality, save favorites, and share shortlists with family.
+## Stack
 
-## Planned features
+- Next.js App Router on Vercel
+- TypeScript
+- Tailwind CSS and shadcn/ui
+- A typed in-repo name catalog (`src/lib/names.ts`)
 
-- Browse and search a curated catalog of dog names
-- Filters: gender vibe, length, origin/language, personality tags, popularity
-- Favorites and shareable shortlists
-- Name meaning and pronunciation helpers
-- Lightweight recommendations based on breed or traits
+Later, if the catalog outgrows a file: Neon Postgres, Drizzle, and Clerk for saved shortlists.
 
-## Status
+## Local setup
 
-Early ideation / greenfield. Repo is ready for product experiments and implementation.
+```bash
+pnpm install
+pnpm test
+pnpm dev
+```
 
-## Getting started
+Open [http://localhost:3000](http://localhost:3000).
 
-Stack and scaffolding are still open. Once we pick a framework (likely Next.js on Vercel), this section will cover local setup.
+## Scripts
 
-## Contributing
-
-Ideas, name lists, and product feedback welcome via issues.
+- `pnpm dev` starts the app
+- `pnpm test` runs catalog and filter checks
+- `pnpm build` produces the production bundle
+- `pnpm lint` runs ESLint
