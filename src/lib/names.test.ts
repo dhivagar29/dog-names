@@ -7,6 +7,11 @@ import {
   nameLength,
   type DogName,
 } from "./names.ts";
+import {
+  nameQuerySearch,
+  parseNameQuery,
+  pickDailyName,
+} from "./name-query.ts";
 
 const catalog: readonly DogName[] = NAMES;
 
@@ -35,6 +40,59 @@ describe("nameLength", () => {
     assert.equal(nameLength("Juniper"), "medium");
     assert.equal(nameLength("Cosette"), "medium");
     assert.equal(nameLength("SomethingLong"), "long");
+  });
+});
+
+describe("parseNameQuery", () => {
+  it("returns an empty query for missing params", () => {
+    assert.deepEqual(parseNameQuery({}), {
+      text: "",
+      gender: "all",
+      origin: "all",
+    });
+  });
+
+  it("keeps known filters and drops unknown ones", () => {
+    assert.deepEqual(
+      parseNameQuery({ q: "  moon ", gender: "female", origin: "martian" }),
+      { text: "moon", gender: "female", origin: "all" },
+    );
+  });
+});
+
+describe("nameQuerySearch", () => {
+  it("omits default filters", () => {
+    assert.equal(
+      nameQuerySearch({ text: "", gender: "all", origin: "all" }),
+      "",
+    );
+  });
+
+  it("serializes active filters", () => {
+    assert.equal(
+      nameQuerySearch({ text: "snow", gender: "unisex", origin: "norse" }),
+      "q=snow&gender=unisex&origin=norse",
+    );
+  });
+});
+
+describe("pickDailyName", () => {
+  it("is stable for a UTC date", () => {
+    const a = pickDailyName(catalog, "2026-08-25");
+    const b = pickDailyName(catalog, "2026-08-25");
+    assert.equal(a.slug, b.slug);
+  });
+
+  it("walks the catalog across consecutive days", () => {
+    const seen = new Set(
+      catalog.map((_, index) => {
+        const iso = new Date(Date.UTC(2026, 0, 1 + index))
+          .toISOString()
+          .slice(0, 10);
+        return pickDailyName(catalog, iso).slug;
+      }),
+    );
+    assert.equal(seen.size, catalog.length);
   });
 });
 
