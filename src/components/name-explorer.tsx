@@ -1,10 +1,12 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
-import { Copy, Heart, Search, X } from "lucide-react";
+import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
+import { Dices, Search, X } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
+import { NameCard } from "@/components/name-card";
 import { Button } from "@/components/ui/button";
+import { writeClipboard } from "@/lib/clipboard";
+import { announceCopied } from "@/lib/copy-notice";
 import {
   filterNames,
   GENDERS,
@@ -13,8 +15,10 @@ import {
   originLabel,
   type DogName,
   type Gender,
+  type NameQuery,
   type Origin,
 } from "@/lib/names";
+import { nameQuerySearch, parseNameQuery } from "@/lib/name-query";
 import {
   emptyShortlist,
   readShortlist,
@@ -26,13 +30,14 @@ const EXAMPLES = ["Luna", "snow", "norse"] as const;
 
 type NameExplorerProps = {
   names: readonly DogName[];
+  initialQuery: NameQuery;
 };
 
-export function NameExplorer({ names }: NameExplorerProps) {
-  const [text, setText] = useState("");
-  const [gender, setGender] = useState<Gender | "all">("all");
-  const [origin, setOrigin] = useState<Origin | "all">("all");
-  const [copied, setCopied] = useState<string | null>(null);
+export function NameExplorer({ names, initialQuery }: NameExplorerProps) {
+  const [text, setText] = useState(initialQuery.text);
+  const [gender, setGender] = useState<Gender | "all">(initialQuery.gender);
+  const [origin, setOrigin] = useState<Origin | "all">(initialQuery.origin);
+  const [spotlight, setSpotlight] = useState<string | null>(null);
   const saved = useSyncExternalStore(
     subscribeShortlist,
     readShortlist,
@@ -54,6 +59,58 @@ export function NameExplorer({ names }: NameExplorerProps) {
 
   const filtered = gender !== "all" || origin !== "all" || text.trim().length > 0;
 
+  useEffect(() => {
+    const search = nameQuerySearch({ text, gender, origin });
+    const next = search ? `?${search}` : "";
+    if (next === window.location.search) {
+      return;
+    }
+    window.history.replaceState(null, "", `${window.location.pathname}${next}`);
+  }, [text, gender, origin]);
+
+  useEffect(() => {
+    function onPop() {
+      const params = new URLSearchParams(window.location.search);
+      const next = parseNameQuery({
+        q: params.get("q") ?? undefined,
+        gender: params.get("gender") ?? undefined,
+        origin: params.get("origin") ?? undefined,
+      });
+      setText(next.text);
+      setGender(next.gender);
+      setOrigin(next.origin);
+    }
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key !== "/" || event.metaKey || event.ctrlKey || event.altKey) {
+        return;
+      }
+      const target = event.target;
+      if (target instanceof HTMLElement) {
+        const tag = target.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable) {
+          return;
+        }
+      }
+      event.preventDefault();
+      document.getElementById("name-search")?.focus();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  useEffect(() => {
+    if (!spotlight) {
+      return;
+    }
+    const timeout = window.setTimeout(() => setSpotlight(null), 4000);
+    return () => window.clearTimeout(timeout);
+  }, [spotlight]);
+
   function toggleSaved(slug: string) {
     writeShortlist(
       saved.includes(slug)
@@ -62,25 +119,52 @@ export function NameExplorer({ names }: NameExplorerProps) {
     );
   }
 
-  async function copyName(name: string) {
-    setCopied(name);
-    window.setTimeout(() => {
-      setCopied((current) => (current === name ? null : current));
-    }, 1600);
-    await writeClipboard(name);
+  function surprise() {
+    if (matches.length === 0) {
+      return;
+    }
+    const pick = matches[Math.floor(Math.random() * matches.length)];
+    if (!pick) {
+      return;
+    }
+    setSpotlight(pick.slug);
+    window.requestAnimationFrame(() => {
+      document.getElementById(`name-${pick.slug}`)?.scrollIntoView({
+        block: "center",
+        behavior: "smooth",
+      });
+    });
+  }
+
+  function resetFilters() {
+    setText("");
+    setGender("all");
+    setOrigin("all");
+  }
+
+  function copyShortlist() {
+    const label = shortlist.map((item) => item.name).join(", ");
+    announceCopied("Copied shortlist");
+    void writeClipboard(label);
   }
 
   return (
     <div id="names" className="flex scroll-mt-24 flex-col gap-8">
-      <div className="rounded-3xl border border-border/80 bg-card/80 p-4 shadow-sm sm:p-6">
+      <div className="rounded-3xl border border-border/80 bg-card/85 p-4 shadow-[0_18px_40px_-28px_oklch(0.35_0.05_50/0.45)] sm:p-6">
         <label className="flex flex-col gap-2">
-          <span className="text-sm font-medium">Search names, meanings, or tags</span>
+          <span className="flex items-center justify-between gap-3 text-sm font-medium">
+            Search names, meanings, or tags
+            <span className="hidden text-xs font-normal text-muted-foreground sm:inline">
+              Press / to jump here
+            </span>
+          </span>
           <span className="relative">
             <Search
               className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
               aria-hidden="true"
             />
             <input
+              id="name-search"
               value={text}
               onChange={(event) => setText(event.target.value)}
               placeholder="Try moon, norse, or short"
@@ -158,16 +242,7 @@ export function NameExplorer({ names }: NameExplorerProps) {
         {filtered ? (
           <div className="mt-5 flex items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground">Filters are on.</p>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setText("");
-                setGender("all");
-                setOrigin("all");
-              }}
-            >
+            <Button type="button" variant="ghost" size="sm" onClick={resetFilters}>
               Clear all
             </Button>
           </div>
@@ -176,14 +251,26 @@ export function NameExplorer({ names }: NameExplorerProps) {
 
       {shortlist.length > 0 ? (
         <section
+          id="shortlist"
           aria-label="Shortlist"
-          className="rounded-3xl border border-primary/20 bg-primary/5 px-4 py-4 sm:px-5"
+          className="scroll-mt-24 rounded-3xl border border-primary/20 bg-primary/5 px-4 py-4 sm:px-5"
         >
-          <div className="flex items-baseline justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-heading text-xl tracking-tight">Your shortlist</h2>
-            <p className="text-sm text-muted-foreground">
-              {shortlist.length} {shortlist.length === 1 ? "name" : "names"}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm text-muted-foreground">
+                {shortlist.length} {shortlist.length === 1 ? "name" : "names"}
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="rounded-full"
+                onClick={copyShortlist}
+              >
+                Copy list
+              </Button>
+            </div>
           </div>
           <ul className="mt-3 flex flex-wrap gap-2">
             {shortlist.map((item) => (
@@ -205,7 +292,7 @@ export function NameExplorer({ names }: NameExplorerProps) {
         </section>
       ) : null}
 
-      <div className="flex items-end justify-between gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="font-heading text-2xl tracking-tight">The catalog</h2>
           <p className="mt-1 text-sm text-muted-foreground" aria-live="polite">
@@ -214,27 +301,25 @@ export function NameExplorer({ names }: NameExplorerProps) {
               : `${matches.length} of ${names.length} names`}
           </p>
         </div>
-        <p className="hidden text-sm text-muted-foreground sm:block">
-          Heart a name to keep it.
-        </p>
+        <Button
+          type="button"
+          variant="outline"
+          className="rounded-full"
+          onClick={surprise}
+          disabled={matches.length === 0}
+        >
+          <Dices className="size-4" />
+          Surprise me
+        </Button>
       </div>
 
       {matches.length === 0 ? (
         <div className="rounded-3xl border border-dashed bg-card px-5 py-14 text-center">
           <p className="font-heading text-2xl tracking-tight">Nothing in that mix</p>
           <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
-            Clear a filter or search a shorter word. Meanings work too, like
-            moon or snow.
+            Clear a filter or search a shorter word. Meanings work too, like moon or snow.
           </p>
-          <Button
-            type="button"
-            className="mt-5 rounded-full"
-            onClick={() => {
-              setText("");
-              setGender("all");
-              setOrigin("all");
-            }}
-          >
+          <Button type="button" className="mt-5 rounded-full" onClick={resetFilters}>
             Reset filters
           </Button>
         </div>
@@ -244,10 +329,7 @@ export function NameExplorer({ names }: NameExplorerProps) {
             <li key={item.slug}>
               <NameCard
                 name={item}
-                saved={saved.includes(item.slug)}
-                copied={copied === item.name}
-                onToggle={() => toggleSaved(item.slug)}
-                onCopy={() => copyName(item.name)}
+                spotlight={spotlight === item.slug}
               />
             </li>
           ))}
@@ -255,28 +337,6 @@ export function NameExplorer({ names }: NameExplorerProps) {
       )}
     </div>
   );
-}
-
-async function writeClipboard(value: string): Promise<boolean> {
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(value);
-      return true;
-    }
-  } catch {
-    // Fall through to execCommand.
-  }
-
-  const field = document.createElement("textarea");
-  field.value = value;
-  field.setAttribute("readonly", "");
-  field.style.position = "fixed";
-  field.style.left = "-9999px";
-  document.body.appendChild(field);
-  field.select();
-  const ok = document.execCommand("copy");
-  document.body.removeChild(field);
-  return ok;
 }
 
 function FilterRow({
@@ -316,70 +376,5 @@ function FilterChip({
     >
       {children}
     </Button>
-  );
-}
-
-function NameCard({
-  name,
-  saved,
-  copied,
-  onToggle,
-  onCopy,
-}: {
-  name: DogName;
-  saved: boolean;
-  copied: boolean;
-  onToggle: () => void;
-  onCopy: () => void;
-}) {
-  return (
-    <article className="flex h-full flex-col rounded-3xl border border-border/80 bg-card p-5 shadow-sm transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-md">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="font-heading text-[1.85rem] leading-none tracking-tight">
-            {name.name}
-          </h3>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {originLabel(name.origin)} · {name.name.length} letters ·{" "}
-            {genderLabel(name.gender)}
-          </p>
-        </div>
-        <Button
-          type="button"
-          size="icon"
-          variant={saved ? "default" : "outline"}
-          className="rounded-full"
-          aria-pressed={saved}
-          aria-label={
-            saved
-              ? `Remove ${name.name} from shortlist`
-              : `Save ${name.name} to shortlist`
-          }
-          onClick={onToggle}
-        >
-          <Heart className={saved ? "size-4 fill-current" : "size-4"} />
-        </Button>
-      </div>
-      <p className="mt-4 flex-1 text-sm leading-6">{name.meaning}</p>
-      <div className="mt-5 flex flex-wrap gap-1.5">
-        {name.tags.map((tag) => (
-          <Badge key={tag} variant="outline">
-            {tag}
-          </Badge>
-        ))}
-      </div>
-      <div className="mt-5 border-t border-border/70 pt-4">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="rounded-full"
-          onClick={onCopy}
-        >
-          <Copy className="size-3.5" />
-          {copied ? "Copied" : "Copy name"}
-        </Button>
-      </div>
-    </article>
   );
 }
