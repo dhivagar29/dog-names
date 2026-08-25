@@ -1,6 +1,23 @@
+"use client";
+
+import { useSyncExternalStore } from "react";
+
+import {
+  emptyShortlist,
+  readShortlist,
+  subscribeShortlist,
+} from "@/lib/shortlist";
+
 export function SiteHeader() {
+  const saved = useSyncExternalStore(
+    subscribeShortlist,
+    readShortlist,
+    emptyShortlist,
+  );
+
   return (
     <header className="sticky top-0 z-20 border-b border-border/80 bg-background/80 backdrop-blur-md">
+      <div className="h-1 bg-primary" />
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-5 sm:px-6">
         <a href="#names" className="flex items-center gap-2.5">
           <span className="inline-flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
@@ -14,12 +31,32 @@ export function SiteHeader() {
           </span>
           <span className="font-heading text-lg tracking-tight">Dog Names</span>
         </a>
-        <a
-          href="#names"
-          className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-        >
-          Browse names
-        </a>
+        <nav className="flex items-center gap-4 text-sm">
+          <a
+            href="#name-search"
+            className="hidden text-muted-foreground transition-colors hover:text-foreground sm:inline"
+          >
+            Search
+          </a>
+          {saved.length > 0 ? (
+            <a
+              href="#shortlist"
+              className="inline-flex items-center gap-2 text-foreground"
+            >
+              Shortlist
+              <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[0.7rem] leading-5 text-primary-foreground">
+                {saved.length}
+              </span>
+            </a>
+          ) : (
+            <a
+              href="#names"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Browse names
+            </a>
+          )}
+        </nav>
       </div>
     </header>
   );
