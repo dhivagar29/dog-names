@@ -404,6 +404,7 @@ export function NameExplorer({ names, initialQuery }: NameExplorerProps) {
             onClick={surprise}
             disabled={matches.length === 0}
           >
+            <Dices className="size-4" />
             Surprise me
           </Button>
         </div>
