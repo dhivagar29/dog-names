@@ -40,7 +40,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           href="#finder"
           className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-4 focus:z-50 focus:rounded-full focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:text-primary-foreground"
         >
-          Skip to names
+          Skip to finder
         </a>
         <SiteHeader />
         {children}
