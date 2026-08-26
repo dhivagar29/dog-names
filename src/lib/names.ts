@@ -213,7 +213,7 @@ export const NAMES = [
     gender: "male",
     origin: "greek",
     meaning: "The titan who held the sky. For a big, steady dog.",
-    tags: ["myth", "large"],
+    tags: ["myth", "bold", "large"],
   },
   {
     slug: "olive",
@@ -301,7 +301,7 @@ export const NAMES = [
     gender: "unisex",
     origin: "english",
     meaning: "Spice. For a dog with opinions.",
-    tags: ["food", "spicy"],
+    tags: ["food", "spicy", "bold"],
   },
   {
     slug: "moss",
