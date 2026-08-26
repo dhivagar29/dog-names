@@ -48,6 +48,17 @@ export function NameExplorer({ names, initialQuery }: NameExplorerProps) {
     emptyShortlist,
   );
 
+  const finderQuery = useMemo(
+    () => ({
+      text: "",
+      gender: "all" as const,
+      origin: "all" as const,
+      vibe,
+      breed,
+    }),
+    [vibe, breed],
+  );
+
   const query = useMemo(
     () => ({ text, gender, origin, vibe, breed }),
     [text, gender, origin, vibe, breed],
@@ -164,8 +175,17 @@ export function NameExplorer({ names, initialQuery }: NameExplorerProps) {
       return;
     }
     const label = shortlist.map((item) => item.name).join(", ");
-    announceCopied("Copied shortlist");
-    void writeClipboard(label);
+    void writeClipboard(label).then((ok) => {
+      if (ok) {
+        announceCopied("Copied shortlist");
+      } else {
+        announceCopied("Could not copy — select and copy manually");
+      }
+    });
+  }
+
+  function clearShortlist() {
+    writeShortlist([]);
   }
 
   function spotlightGenerated(slug: string) {
@@ -179,7 +199,7 @@ export function NameExplorer({ names, initialQuery }: NameExplorerProps) {
     <div className="flex flex-col gap-10">
       <NameFinder
         names={names}
-        query={query}
+        query={finderQuery}
         onBreedChange={setBreed}
         onVibeChange={setVibe}
         onGenerated={spotlightGenerated}
@@ -199,16 +219,28 @@ export function NameExplorer({ names, initialQuery }: NameExplorerProps) {
                 : `${shortlist.length} ${shortlist.length === 1 ? "name" : "names"} saved on this device`}
             </p>
           </div>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="rounded-full"
-            onClick={copyShortlist}
-            disabled={shortlist.length === 0}
-          >
-            Copy list
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="rounded-full"
+              onClick={copyShortlist}
+              disabled={shortlist.length === 0}
+            >
+              Copy list
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="rounded-full"
+              onClick={clearShortlist}
+              disabled={shortlist.length === 0}
+            >
+              Clear
+            </Button>
+          </div>
         </div>
         {shortlist.length === 0 ? (
           <div className="mt-4 rounded-2xl border border-dashed border-border/80 bg-card/60 px-4 py-8 text-center">
@@ -372,7 +404,6 @@ export function NameExplorer({ names, initialQuery }: NameExplorerProps) {
             onClick={surprise}
             disabled={matches.length === 0}
           >
-            <Dices className="size-4" />
             Surprise me
           </Button>
         </div>
