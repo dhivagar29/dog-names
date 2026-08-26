@@ -1,30 +1,73 @@
 import { NameExplorer } from "@/components/name-explorer";
+import { NameCard } from "@/components/name-card";
 import { NAMES } from "@/lib/names";
+import { parseNameQuery, pickDailyName } from "@/lib/name-query";
 
-export default function Home() {
+type HomeProps = {
+  searchParams: Promise<{
+    q?: string | string[];
+    gender?: string | string[];
+    origin?: string | string[];
+    vibe?: string | string[];
+    breed?: string | string[];
+  }>;
+};
+
+function first(value: string | string[] | undefined): string | undefined {
+  if (Array.isArray(value)) {
+    return value[0];
+  }
+  return value;
+}
+
+export default async function Home({ searchParams }: HomeProps) {
+  const params = await searchParams;
+  const initialQuery = parseNameQuery({
+    q: first(params.q),
+    gender: first(params.gender),
+    origin: first(params.origin),
+    vibe: first(params.vibe),
+    breed: first(params.breed),
+  });
+  const daily = pickDailyName(NAMES, new Date().toISOString().slice(0, 10));
+
   return (
-    <div className="flex flex-1 flex-col">
-      <header className="border-b bg-card/70">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
-          <p className="text-sm font-medium tracking-tight">Dog Names</p>
-          <p className="text-sm text-muted-foreground">A starter catalog</p>
+    <main className="flex flex-1 flex-col">
+      <section className="hero-wash relative overflow-hidden border-b border-border/70">
+        <div className="mx-auto grid w-full max-w-6xl gap-10 px-5 py-14 sm:px-6 sm:py-20 lg:grid-cols-[minmax(0,1.05fr)_minmax(18rem,22rem)] lg:items-center">
+          <div className="max-w-xl">
+            <p className="text-sm font-medium text-primary">
+              For the dog, and the person calling them
+            </p>
+            <h1 className="mt-4 font-heading text-[2.45rem] leading-[1.08] tracking-tight sm:text-5xl">
+              Pick a name you would shout across a park.
+            </h1>
+            <p className="mt-5 max-w-md text-base leading-7 text-muted-foreground">
+              Tell us the breed and vibe. Generate a few names to say out loud,
+              heart the survivors, and copy your shortlist for the household vote.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3 text-sm">
+              <a
+                href="#finder"
+                className="inline-flex h-10 items-center rounded-full bg-primary px-4 font-medium text-primary-foreground transition-colors hover:bg-primary/80"
+              >
+                Find names for my dog
+              </a>
+              <a
+                href={`#name-${daily.slug}`}
+                className="inline-flex h-10 items-center rounded-full border border-border bg-card px-4 font-medium transition-colors hover:bg-muted"
+              >
+                Jump to {daily.name}
+              </a>
+            </div>
+          </div>
+          <NameCard name={daily} featured htmlId="todays-name" />
         </div>
-      </header>
+      </section>
 
-      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-10 px-6 py-12 sm:py-16">
-        <section className="max-w-2xl">
-          <p className="text-sm font-medium text-primary">Find a name that fits</p>
-          <h1 className="mt-3 font-heading text-4xl leading-tight tracking-tight sm:text-5xl">
-            Browse dog names by vibe, origin, and meaning.
-          </h1>
-          <p className="mt-4 max-w-xl text-base leading-7 text-muted-foreground">
-            Search the first curated set, then shortlist what you would actually
-            shout across a park. Favorites and accounts come later.
-          </p>
-        </section>
-
-        <NameExplorer names={NAMES} />
-      </main>
-    </div>
+      <div className="mx-auto w-full max-w-6xl flex-1 px-5 py-10 sm:px-6 sm:py-14">
+        <NameExplorer names={NAMES} initialQuery={initialQuery} />
+      </div>
+    </main>
   );
 }

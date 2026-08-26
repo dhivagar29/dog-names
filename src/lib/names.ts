@@ -29,7 +29,22 @@ export type NameQuery = {
   text: string;
   gender: Gender | "all";
   origin: Origin | "all";
+  vibe: string | "all";
+  breed: string | "all";
 };
+
+export const VIBE_FILTERS = [
+  "gentle",
+  "playful",
+  "nature",
+  "bold",
+  "short",
+  "myth",
+  "classic",
+  "uncommon",
+] as const;
+
+export type VibeFilter = (typeof VIBE_FILTERS)[number];
 
 export const NAMES = [
   {
@@ -332,17 +347,26 @@ export function nameLength(name: string): NameLength {
   return "long";
 }
 
+import { getBreed } from "./breeds.ts";
+
 export function filterNames(
   names: readonly DogName[],
   query: NameQuery,
 ): readonly DogName[] {
   const needle = query.text.trim().toLowerCase();
+  const breed = query.breed !== "all" ? getBreed(query.breed) : undefined;
 
   return names.filter((item) => {
     if (query.gender !== "all" && item.gender !== query.gender) {
       return false;
     }
     if (query.origin !== "all" && item.origin !== query.origin) {
+      return false;
+    }
+    if (query.vibe !== "all" && !item.tags.includes(query.vibe)) {
+      return false;
+    }
+    if (breed && !item.tags.some((tag) => breed.vibes.includes(tag))) {
       return false;
     }
     if (needle.length === 0) {
@@ -355,6 +379,26 @@ export function filterNames(
       item.tags.some((tag) => tag.toLowerCase().includes(needle))
     );
   });
+}
+
+export function pickRandomNames(
+  names: readonly DogName[],
+  count: number,
+): readonly DogName[] {
+  if (count <= 0 || names.length === 0) {
+    return [];
+  }
+  const pool = [...names];
+  const picks: DogName[] = [];
+  const limit = Math.min(count, pool.length);
+  while (picks.length < limit) {
+    const index = Math.floor(Math.random() * pool.length);
+    const [item] = pool.splice(index, 1);
+    if (item) {
+      picks.push(item);
+    }
+  }
+  return picks;
 }
 
 export function originLabel(origin: Origin): string {
