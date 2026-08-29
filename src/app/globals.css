@@ -55,18 +55,18 @@
   --card-foreground: oklch(0.26 0.04 48);
   --popover: oklch(0.99 0.008 85);
   --popover-foreground: oklch(0.26 0.04 48);
-  --primary: oklch(0.5 0.14 38);
+  --primary: oklch(0.46 0.15 38);
   --primary-foreground: oklch(0.99 0.01 85);
   --secondary: oklch(0.94 0.03 78);
   --secondary-foreground: oklch(0.28 0.04 48);
   --muted: oklch(0.935 0.02 78);
-  --muted-foreground: oklch(0.5 0.03 55);
+  --muted-foreground: oklch(0.44 0.03 55);
   --accent: oklch(0.93 0.04 75);
   --accent-foreground: oklch(0.28 0.05 45);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.88 0.03 72);
   --input: oklch(0.88 0.03 72);
-  --ring: oklch(0.5 0.14 38);
+  --ring: oklch(0.46 0.15 38);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -138,20 +138,52 @@
     radial-gradient(46rem 24rem at 100% 0%, oklch(0.88 0.05 145 / 0.4), transparent 52%);
 }
 
+/* Parchment grain. Subtle enough to read through, visible enough to feel like paper. */
+body {
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    oklch(0.55 0.05 60 / 0.055) 1px,
+    transparent 0
+  );
+  background-size: 22px 22px;
+  background-attachment: fixed;
+}
+
 .name-card[data-gender="female"] {
-  border-left: 3px solid oklch(0.62 0.12 25);
+  border-left: 3px solid oklch(0.55 0.14 25);
 }
 
 .name-card[data-gender="male"] {
-  border-left: 3px solid oklch(0.48 0.08 240);
+  border-left: 3px solid oklch(0.44 0.1 245);
 }
 
 .name-card[data-gender="unisex"] {
-  border-left: 3px solid oklch(0.5 0.14 38);
+  border-left: 3px solid oklch(0.46 0.15 38);
+}
+
+.name-card {
+  transition:
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.name-card:hover {
+  transform: translateY(-2px);
+}
+
+.name-card[data-tone="featured"],
+.name-card[data-tone="draw"] {
+  transform: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
+  }
+
+  .name-card,
+  .name-card:hover {
+    transition: none;
+    transform: none;
   }
 }

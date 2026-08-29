@@ -53,3 +53,14 @@ export function subscribeShortlist(onStoreChange: () => void): () => void {
 export function emptyShortlist(): string[] {
   return EMPTY_SHORTLIST;
 }
+
+/** Newest saves go to the front, so the shortlist reads like a recent-picks list. */
+export function toggleShortlist(slugs: readonly string[], slug: string): string[] {
+  return slugs.includes(slug)
+    ? slugs.filter((item) => item !== slug)
+    : [slug, ...slugs];
+}
+
+export function clearShortlist(): void {
+  writeShortlist([]);
+}

@@ -1,9 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Geist, Geist_Mono } from "next/font/google";
 
+import { CopyToast } from "@/components/copy-toast";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
-import { CopyToast } from "@/components/copy-toast";
 
 import "./globals.css";
 
@@ -24,9 +24,19 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "Dog Names",
+  title: "Dog Names — find one you would shout across a park",
   description:
-    "Browse dog names by vibe, origin, and meaning. Save a shortlist for the household vote.",
+    "Browse real dog names by meaning, origin, vibe and length. Draw a surprise pick, save favourites, and copy the winner. No account, no database.",
+  openGraph: {
+    title: "Dog Names",
+    description:
+      "Browse real dog names by meaning, origin, vibe and length. Save favourites and copy the winner.",
+    type: "website",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#f4ecd8",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -37,10 +47,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="flex min-h-full flex-col bg-background text-foreground">
         <a
-          href="#names"
+          href="#find"
           className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-4 focus:z-50 focus:rounded-full focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:text-primary-foreground"
         >
-          Skip to names
+          Skip to search
         </a>
         <SiteHeader />
         {children}

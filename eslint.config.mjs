@@ -13,6 +13,8 @@ const eslintConfig = defineConfig([
     "build/**",
     ".vercel/**",
     "next-env.d.ts",
+    // Compiled test output produced by `pnpm test`.
+    ".test-out/**",
   ]),
 ]);
 
